@@ -22,7 +22,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: '이미지에 대체 텍스트(alt 속성)가 없습니다',
     koreanHelp: '모든 이미지 요소에 대체 텍스트를 제공하세요. 장식용 이미지는 alt=""를 사용하세요'
   },
@@ -31,7 +31,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: '이미지 버튼에 대체 텍스트가 없습니다',
     koreanHelp: 'type="image"인 input 요소에 alt 속성을 추가하세요'
   },
@@ -40,7 +40,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: '이미지 맵 영역에 대체 텍스트가 없습니다',
     koreanHelp: 'area 요소에 alt 속성을 추가하세요'
   },
@@ -49,7 +49,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: 'object 요소에 대체 텍스트가 없습니다',
     koreanHelp: 'object 요소 내부에 대체 콘텐츠를 제공하세요'
   },
@@ -58,7 +58,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: 'SVG 이미지에 대체 텍스트가 없습니다',
     koreanHelp: 'SVG 요소에 title 또는 aria-label을 제공하세요'
   },
@@ -67,7 +67,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: 'role="img"인 요소에 대체 텍스트가 없습니다',
     koreanHelp: 'role="img"인 요소에 aria-label 또는 aria-labelledby를 추가하세요'
   },
@@ -76,7 +76,7 @@ export const KWCAG_MAPPING: Record<string, KWCAGGuideline> = {
     code: '1.1.1',
     name: '적절한 대체 텍스트 제공(중복)',
     isAutomatic: true,
-    isAutomatic: true,
+
     koreanDescription: '이미지 대체 텍스트가 중복됩니다',
     koreanHelp: '이미지의 alt 텍스트가 주변 텍스트와 중복되지 않도록 수정하세요'
   },
