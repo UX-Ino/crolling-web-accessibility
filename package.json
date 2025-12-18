@@ -1,6 +1,6 @@
 {
   "name": "a11y-crawler",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "웹 접근성 크롤러 - KWCAG 2.2 자동 검사 도구 (Korean Web Content Accessibility Guidelines)",
   "keywords": [
     "accessibility",
