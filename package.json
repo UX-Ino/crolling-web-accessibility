@@ -1,27 +1,40 @@
 {
   "name": "a11y-crawler",
   "version": "1.0.0",
-  "description": "웹 접근성 크롤러 - KWCAG 2.2 자동 검사 도구",
+  "description": "웹 접근성 크롤러 - KWCAG 2.2 자동 검사 도구 (Korean Web Content Accessibility Guidelines)",
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "kwcag",
+    "web-accessibility",
+    "crawler",
+    "audit",
+    "axe-core",
+    "playwright"
+  ],
   "author": "UX-Ino",
   "license": "MIT",
-  "bin": {
-    "a11y-crawler": "./bin/cli.js"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ux-ino/crolling-web-accessibility.git"
   },
-  "files": [
-    "bin/",
-    "app/",
-    "lib/",
-    ".next/",
-    "public/",
-    "package.json",
-    "next.config.ts",
-    "tsconfig.json"
-  ],
+  "bugs": {
+    "url": "https://github.com/ux-ino/crolling-web-accessibility/issues"
+  },
+  "homepage": "https://github.com/ux-ino/crolling-web-accessibility#readme",
+  "bin": {
+    "a11y-crawler": "bin/cli.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "axe-core": "^4.11.0",

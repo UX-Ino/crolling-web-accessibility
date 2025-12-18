@@ -1,0 +1,55 @@
+# npm 퍼블리시 제외 파일
+# 개발 및 빌드 관련 파일들을 제외합니다
+
+# Next.js 빌드 결과물 (런타임에 다시 빌드됨)
+.next/
+out/
+
+# 개발 도구
+.git/
+.github/
+.vscode/
+.idea/
+
+# 시스템 파일
+.DS_Store
+*.log
+*.swp
+*.swo
+*~
+
+# 테스트 및 커버리지
+coverage/
+.nyc_output/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+__tests__/
+
+# 환경 변수
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 임시 파일
+tmp/
+temp/
+*.tmp
+
+# 문서 (필요한 것만 포함)
+DEPLOYMENT_OPTIONS.md
+
+# TypeScript 빌드 정보
+tsconfig.tsbuildinfo
+
+# npm 관련
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tgz
+
+# Gemini artifacts
+.gemini/
