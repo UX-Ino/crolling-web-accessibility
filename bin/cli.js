@@ -1,54 +1,32 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process');
 const path = require('path');
-
-const PORT = process.env.PORT || 3000;
-const appDir = path.join(__dirname, '..');
+const { spawn } = require('child_process');
 
 console.log('🚀 웹 접근성 크롤러를 시작합니다...\n');
-console.log('🌐 서버를 시작합니다...\n');
 
-// 개발 서버 시작 (npx 실행 시 자동으로 빌드됨)
-const server = exec('npm run dev', {
-  cwd: appDir,
-  env: {
-    ...process.env,
-    PORT: PORT.toString()
-  }
+const dir = path.resolve(__dirname, '..');
+const nextBin = require.resolve('next/dist/bin/next');
+
+// Production 모드로 실행
+const child = spawn(process.execPath, [nextBin, 'start', dir], {
+  stdio: 'inherit',
+  cwd: dir,
+  env: { ...process.env, NODE_ENV: 'production', PORT: process.env.PORT || '3000' }
 });
 
-server.stdout.pipe(process.stdout);
-server.stderr.pipe(process.stderr);
-
-// 서버가 준비되면 브라우저 열기  
-setTimeout(async () => {
-  const url = `http://localhost:${PORT}`;
-  console.log(`\n✨ 브라우저를 엽니다: ${url}\n`);
-
-  try {
-    const open = (await import('open')).default;
-    await open(url, { app: { name: 'google chrome' } });
-  } catch (error) {
-    try {
-      const open = (await import('open')).default;
-      await open(url);
-    } catch (e) {
-      console.log('⚠️  브라우저를 자동으로 열 수 없습니다. 직접 열어주세요:', url);
-    }
-  }
-
-  console.log('💡 종료하려면 Ctrl+C를 누르세요.\n');
-}, 8000);
+child.on('close', (code) => {
+  process.exit(code);
+});
 
 // 종료 시그널 처리
 process.on('SIGINT', () => {
   console.log('\n\n👋 서버를 종료합니다...\n');
-  server.kill();
+  child.kill();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  server.kill();
+  child.kill();
   process.exit(0);
 });
