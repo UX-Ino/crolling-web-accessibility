@@ -33,8 +33,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "prepublishOnly": "npm run build"
+    "lint": "eslint"
   },
   "dependencies": {
     "axe-core": "^4.11.0",
