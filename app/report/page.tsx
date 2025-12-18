@@ -64,13 +64,13 @@ export default function ReportPage() {
 
   // 통계 계산
   const totalPages = results.length;
-  const totalViolations = results.reduce((sum, r) => sum + r.totalViolations, 0);
-  const pagesWithErrors = results.filter(r => r.totalViolations > 0).length;
+  const totalViolations = results.reduce((sum, r) => sum + (r.totalViolations || 0), 0);
+  const pagesWithErrors = results.filter(r => (r.totalViolations || 0) > 0).length;
 
   // 위반 유형별 집계
   const violationsByType: Record<string, number> = {};
   results.forEach(result => {
-    result.violations.forEach(v => {
+    (result.violations || []).forEach(v => {
       violationsByType[v.id] = (violationsByType[v.id] || 0) + v.nodes.length;
     });
   });
@@ -228,7 +228,7 @@ export default function ReportPage() {
             ${result.totalViolations} 위반
           </div>
           
-          ${result.violations.map(violation => `
+          ${(result.violations || []).map(violation => `
             <div class="violation">
               <div class="violation-header">
                 <div style="flex: 1;">
@@ -374,9 +374,9 @@ export default function ReportPage() {
                   </div>
                 </div>
 
-                {expandedPages.has(idx) && result.violations.length > 0 && (
+                {expandedPages.has(idx) && (result.violations || []).length > 0 && (
                   <div className="px-6 py-4 bg-gray-50 space-y-4">
-                    {result.violations.map((violation, vIdx) => (
+                    {(result.violations || []).map((violation, vIdx) => (
                       <div key={vIdx} className="bg-white p-4 rounded-lg border border-gray-200">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">

@@ -125,7 +125,7 @@ export default function ChecklistPage() {
           let ruleHelpUrl = '';
 
           loadedResults.forEach(page => {
-            const v = page.violations.find(v => v.id === ruleId);
+            const v = (page.violations || []).find(v => v.id === ruleId);
             if (v) {
               pagesWithViolation.push({
                 title: page.title,

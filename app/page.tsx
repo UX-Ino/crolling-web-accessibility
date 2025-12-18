@@ -37,6 +37,23 @@ export default function Home() {
     scrollToBottom();
   }, [logs]);
 
+  // Electron 로그 리스너 등록
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.electron && window.electron.ipcRenderer) {
+      const handleLog = (message: string) => {
+        setLogs(prev => [...prev, message]);
+      };
+
+      window.electron.ipcRenderer.on('crawler:log', handleLog);
+
+      return () => {
+        if (window.electron?.ipcRenderer) {
+          window.electron.ipcRenderer.removeListener('crawler:log', handleLog);
+        }
+      };
+    }
+  }, []);
+
   const handleStart = async () => {
     if (!baseUrl) {
       alert('시작 URL을 입력하세요.');
@@ -50,52 +67,79 @@ export default function Home() {
     setLogs(prev => [...prev, "요청을 시작합니다..."]);
 
     try {
-      const endpoint = enableAudit ? '/api/audit' : '/api/crawl';
-      const body = enableAudit
-        ? { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined, platform, auditor }
-        : { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined };
+      const options = enableAudit
+        ? { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined, platform, auditor, enableAudit }
+        : { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined, enableAudit: false };
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      // Electron 환경 체크
+      if (typeof window !== 'undefined' && window.electron) {
+        setLogs(prev => [...prev, "Electron 환경에서 실행 중..."]);
+        try {
+          // 직접 크롤링 함수 호출 (IPC)
+          const data = await window.electron.crawler.crawl(options);
 
-      if (!response.body) {
-        setLogs(prev => [...prev, "서버 응답이 없습니다."]);
-        return;
-      }
+          if (enableAudit) {
+            // Audit 모드: { results: [...] } 형태
+            const auditData = data.results || data; // 구조 호환성 확보
+            setResults(Array.isArray(auditData) ? auditData : []);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const data = JSON.parse(line);
-            if (data.type === 'log') {
-              setLogs(prev => [...prev, data.message]);
-            } else if (data.type === 'result') {
-              if (enableAudit) {
-                setResults(data.data.results);
-                setExcelData(data.data.excelBase64);
-                // localStorage에 저장 (리포트 페이지용)
-                localStorage.setItem('auditResults', JSON.stringify(data.data.results));
-              } else {
-                setResults(data.data);
-              }
+            if (data.excelBase64) {
+              setExcelData(data.excelBase64);
             }
-          } catch (e) {
-            console.error("JSON Parse Error", e);
+            localStorage.setItem('auditResults', JSON.stringify(Array.isArray(auditData) ? auditData : []));
+          } else {
+            // 일반 모드: [...] 배열 형태
+            setResults(Array.isArray(data) ? data : []);
+          }
+          setLogs(prev => [...prev, "작업 완료"]);
+        } catch (err) {
+          throw err;
+        }
+      } else {
+        // 웹 환경 (API 호출)
+        const endpoint = enableAudit ? '/api/audit' : '/api/crawl';
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(options),
+        });
+
+        if (!response.body) {
+          setLogs(prev => [...prev, "서버 응답이 없습니다."]);
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const data = JSON.parse(line);
+              if (data.type === 'log') {
+                setLogs(prev => [...prev, data.message]);
+              } else if (data.type === 'result') {
+                if (enableAudit) {
+                  setResults(data.data.results);
+                  setExcelData(data.data.excelBase64);
+                  // localStorage에 저장 (리포트 페이지용)
+                  localStorage.setItem('auditResults', JSON.stringify(data.data.results));
+                } else {
+                  setResults(data.data);
+                }
+              }
+            } catch (e) {
+              console.error("JSON Parse Error", e);
+            }
           }
         }
       }

@@ -1,21 +1,57 @@
 import { Page } from 'playwright';
 import { Violation } from '@/types/audit';
+import * as fs from 'fs';
+import * as path from 'path';
+
+declare global {
+  interface Window {
+    axe: any;
+  }
+}
+
+
+export interface LogCallback {
+  (message: string): void;
+}
 
 export class AccessibilityAuditor {
+  private onLog?: LogCallback;
+
+  constructor(onLog?: LogCallback) {
+    this.onLog = onLog;
+  }
+
+  private log(message: string) {
+    if (this.onLog) {
+      this.onLog(message);
+    }
+    console.log(message);
+  }
+
   /**
-   * axe-core 스크립트를 CDN에서 주입
+   * axe-core 스크립트를 파일 시스템에서 직접 읽어 주입
    */
   async injectAxeCore(page: Page): Promise<void> {
     try {
-      // CDN에서 axe-core 로드
+      // 1. 로컬 node_modules에서 axe-core 소스 읽기
+      // Electron 및 Playwright 환경에서 가장 확실한 방법은 소스 코드를 문자열로 읽어서 주입하는 것입니다.
+      const axePath = require.resolve('axe-core/axe.min.js');
+      const axeSource = fs.readFileSync(axePath, 'utf8');
+
+      await page.addScriptTag({ content: axeSource });
+    } catch (e) {
+      this.log(`Local axe-core read failed, falling back to CDN: ${e}`);
+      // 2. 실패 시 CDN 사용
       await page.addScriptTag({
         url: 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js',
       });
+    }
 
+    try {
       // 로드 확인
-      await page.waitForFunction(() => typeof (window as any).axe !== 'undefined');
+      await page.waitForFunction(() => typeof (window as any).axe !== 'undefined', null, { timeout: 10000 });
     } catch (error) {
-      console.error('Failed to inject axe-core:', error);
+      this.log(`Failed to inject axe-core: ${error}`);
       throw error;
     }
   }
@@ -29,24 +65,33 @@ export class AccessibilityAuditor {
       await this.injectAxeCore(page);
 
       // 진단 실행 (WCAG 2.1 AA)
+      // this.log(`Running axe audit on page: ${page.url()}`);
+
       const results = await page.evaluate(async () => {
-        return await (window as any).axe.run({
+        if (!window.axe) throw new Error('Axe not loaded');
+        // 브라우저 내 콘솔 로그는 터미널로 전달되지 않으므로, 반환값에 포함하거나 별도 처리가 필요하지만
+        // 여기서는 중요 정보(버전 등)를 반환받아 출력하는 것이 좋습니다.
+        // 일단 evaluate 내부의 console.log는 브라우저 컨텍스트라 Node 터미널에 안 찍힘.
+        return await window.axe.run({
           runOnly: {
             type: 'tag',
             values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
           },
           locale: {
-            // 한국어 메시지 일부 오버라이드
             lang: 'ko',
           },
           resultTypes: ['violations'],
         });
       });
 
+      // this.log(`Axe Version: ${results.toolOptions.axeVersion}`);
+      // this.log(`Axe audit finished. Found ${results.violations?.length || 0} violations.`);
+
+      // 결과 포맷팅
       // 결과 포맷팅
       return this.formatViolations(results.violations || []);
     } catch (error) {
-      console.error('Accessibility audit failed:', error);
+      this.log(`Accessibility audit failed: ${error}`);
       return [];
     }
   }
@@ -81,5 +126,27 @@ export class AccessibilityAuditor {
    */
   getTotalViolationCount(violations: Violation[]): number {
     return violations.reduce((sum, v) => sum + v.nodes.length, 0);
+  }
+
+  /**
+   * HTML 문자열 또는 URL에 대한 단일 검사 실행
+   */
+  async audit(html: string, url: string = 'about:blank'): Promise<Violation[]> {
+    const { chromium } = await import('playwright');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    try {
+      if (url && url !== 'about:blank') {
+        await page.goto(url);
+        if (html) await page.setContent(html);
+      } else {
+        await page.setContent(html);
+      }
+
+      const results = await this.runAudit(page);
+      return results;
+    } finally {
+      await browser.close();
+    }
   }
 }

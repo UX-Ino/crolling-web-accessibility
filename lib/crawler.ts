@@ -40,9 +40,11 @@ export class WebCrawler {
   private isValidUrl(url: string): boolean {
     try {
       const parsed = new URL(url);
+      const isPdf = parsed.pathname.toLowerCase().endsWith('.pdf');
       return (
         parsed.hostname === this.domain &&
-        (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        !isPdf
       );
     } catch {
       return false;
@@ -188,10 +190,10 @@ export class WebCrawler {
   }
 
   /**
-   * 접근성 진단 포함 크롤링
    */
   public async crawlWithAudit(): Promise<AuditResult[]> {
-    const auditor = new AccessibilityAuditor();
+    // 로그 콜백 주입: Auditor 내부 로그를 Crawler 로그로 전달
+    const auditor = new AccessibilityAuditor((msg) => this.log(msg));
     const browser = await chromium.launch({ headless: false });
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -212,6 +214,12 @@ export class WebCrawler {
           this.log(`[진단 중] ${currentUrl}`);
           await page.goto(currentUrl, { timeout: 60000 });
           await page.waitForLoadState('domcontentloaded');
+
+          try {
+            await page.waitForLoadState('networkidle', { timeout: 5000 });
+          } catch (e) {
+            this.log('네트워크 대기 타임아웃 (진단 계속 진행)');
+          }
 
           const title = await page.title();
 
