@@ -34,11 +34,33 @@ export class AccessibilityAuditor {
   async injectAxeCore(page: Page): Promise<void> {
     try {
       // 1. 로컬 node_modules에서 axe-core 소스 읽기
-      // Electron 및 Playwright 환경에서 가장 확실한 방법은 소스 코드를 문자열로 읽어서 주입하는 것입니다.
-      const axePath = require.resolve('axe-core/axe.min.js');
-      const axeSource = fs.readFileSync(axePath, 'utf8');
+      let axePath: string;
+      try {
+        axePath = require.resolve('axe-core/axe.min.js');
+        // Next.js 환경에서 [project] 접두사가 붙는 경우 처리
+        if (axePath.startsWith('[project]')) {
+          axePath = axePath.replace('[project]', process.cwd());
+        }
+      } catch (e) {
+        // require.resolve 실패 시 수동 경로 시도
+        axePath = path.join(process.cwd(), 'node_modules', 'axe-core', 'axe.min.js');
+      }
 
-      await page.addScriptTag({ content: axeSource });
+      // 파일 존재 여부 확인 후 읽기 (없으면 catch 블록으로 이동하여 CDN 사용)
+      if (fs.existsSync(axePath)) {
+        const axeSource = fs.readFileSync(axePath, 'utf8');
+        await page.addScriptTag({ content: axeSource });
+      } else {
+        // 마지막 시도: node_modules 직접 지정
+        const manualPath = path.join(process.cwd(), 'node_modules', 'axe-core', 'axe.min.js');
+        if (fs.existsSync(manualPath) && manualPath !== axePath) {
+          const axeSource = fs.readFileSync(manualPath, 'utf8');
+          await page.addScriptTag({ content: axeSource });
+        } else {
+          throw new Error(`axe-core not found at ${axePath}`);
+        }
+      }
+
     } catch (e) {
       this.log(`Local axe-core read failed, falling back to CDN: ${e}`);
       // 2. 실패 시 CDN 사용
@@ -133,7 +155,7 @@ export class AccessibilityAuditor {
    */
   async audit(html: string, url: string = 'about:blank'): Promise<Violation[]> {
     const { chromium } = await import('playwright');
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({ channel: 'chrome' });
     const page = await browser.newPage();
     try {
       if (url && url !== 'about:blank') {

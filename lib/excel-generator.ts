@@ -141,3 +141,21 @@ export class ExcelGenerator {
     });
   }
 }
+
+/**
+ * 접근성 진단 결과에 대한 Excel 리포트 생성 (Node.js Buffer 반환)
+ */
+export async function generateExcelReport(
+  results: AuditResult[],
+  metadata: Partial<AuditMetadata>
+): Promise<Buffer> {
+  const fullMetadata: AuditMetadata = {
+    platform: metadata.platform || 'PC',
+    auditor: metadata.auditor || '자동진단시스템',
+    date: metadata.date || new Date().toISOString().split('T')[0],
+  };
+
+  const arrayBuffer = ExcelGenerator.generateAccessibilityExcel(results, fullMetadata);
+  return Buffer.from(arrayBuffer);
+}
+

@@ -29,7 +29,7 @@ export interface AuditMetadata {
   platform: 'PC' | 'Mobile';
   auditor: string;
   date: string; // YYYY-MM-DD
-  baseUrl: string;
+  baseUrl?: string;
 }
 
 export interface AuditReport {

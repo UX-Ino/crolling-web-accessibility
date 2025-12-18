@@ -37,22 +37,7 @@ export default function Home() {
     scrollToBottom();
   }, [logs]);
 
-  // Electron 로그 리스너 등록
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.electron && window.electron.ipcRenderer) {
-      const handleLog = (message: string) => {
-        setLogs(prev => [...prev, message]);
-      };
 
-      window.electron.ipcRenderer.on('crawler:log', handleLog);
-
-      return () => {
-        if (window.electron?.ipcRenderer) {
-          window.electron.ipcRenderer.removeListener('crawler:log', handleLog);
-        }
-      };
-    }
-  }, []);
 
   const handleStart = async () => {
     if (!baseUrl) {
@@ -71,32 +56,10 @@ export default function Home() {
         ? { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined, platform, auditor, enableAudit }
         : { baseUrl, useLogin, loginUrl: loginUrl || undefined, gnbSelector: gnbSelector || undefined, enableAudit: false };
 
-      // Electron 환경 체크
-      if (typeof window !== 'undefined' && window.electron) {
-        setLogs(prev => [...prev, "Electron 환경에서 실행 중..."]);
-        try {
-          // 직접 크롤링 함수 호출 (IPC)
-          const data = await window.electron.crawler.crawl(options);
+      // API 호출 (Next.js API Routes with SSE)
+      setLogs(prev => [...prev, "크롤링 시작..."]);
 
-          if (enableAudit) {
-            // Audit 모드: { results: [...] } 형태
-            const auditData = data.results || data; // 구조 호환성 확보
-            setResults(Array.isArray(auditData) ? auditData : []);
-
-            if (data.excelBase64) {
-              setExcelData(data.excelBase64);
-            }
-            localStorage.setItem('auditResults', JSON.stringify(Array.isArray(auditData) ? auditData : []));
-          } else {
-            // 일반 모드: [...] 배열 형태
-            setResults(Array.isArray(data) ? data : []);
-          }
-          setLogs(prev => [...prev, "작업 완료"]);
-        } catch (err) {
-          throw err;
-        }
-      } else {
-        // 웹 환경 (API 호출)
+      try {
         const endpoint = enableAudit ? '/api/audit' : '/api/crawl';
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -104,44 +67,118 @@ export default function Home() {
           body: JSON.stringify(options),
         });
 
-        if (!response.body) {
-          setLogs(prev => [...prev, "서버 응답이 없습니다."]);
-          return;
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const reader = response.body.getReader();
+        // SSE 스트림 읽기
+        const reader = response.body?.getReader();
         const decoder = new TextDecoder();
+
+        if (!reader) {
+          throw new Error('Response body is null');
+        }
+
         let buffer = '';
+        let currentEvent = '';
 
         while (true) {
           const { done, value } = await reader.read();
+
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
+
+          // 마지막 불완전한 줄은 buffer에 유지
           buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.trim()) continue;
-            try {
-              const data = JSON.parse(line);
-              if (data.type === 'log') {
-                setLogs(prev => [...prev, data.message]);
-              } else if (data.type === 'result') {
-                if (enableAudit) {
-                  setResults(data.data.results);
-                  setExcelData(data.data.excelBase64);
-                  // localStorage에 저장 (리포트 페이지용)
-                  localStorage.setItem('auditResults', JSON.stringify(data.data.results));
-                } else {
-                  setResults(data.data);
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+
+                if (parsed.type === 'log') {
+                  // 실시간 로그 추가
+                  setLogs(prev => [...prev, parsed.message]);
+                } else if (currentEvent === 'done' || parsed.success !== undefined) {
+                  // 완료 데이터 처리
+                  if (!parsed.success) {
+                    throw new Error(parsed.error || '크롤링 실패');
+                  }
+
+                  if (enableAudit) {
+                    const auditData = parsed.data.results || parsed.data;
+                    setResults(Array.isArray(auditData) ? auditData : []);
+
+                    if (parsed.data.excelBase64) {
+                      setExcelData(parsed.data.excelBase64);
+                    }
+                    localStorage.setItem('auditResults', JSON.stringify(Array.isArray(auditData) ? auditData : []));
+                  } else {
+                    setResults(parsed.data || []);
+                    localStorage.setItem('crawledUrls', JSON.stringify(parsed.data || []));
+                  }
+
+                  setLogs(prev => [...prev, "✅ 작업 완료!"]);
+                } else if (currentEvent === 'error') {
+                  throw new Error(parsed.error || '크롤링 실패');
+                }
+              } catch (e) {
+                if (currentEvent === 'done' || currentEvent === 'error') {
+                  console.error('Error parsing event data:', e);
+                  setLogs(prev => [...prev, `❌ 데이터 파싱 오류: ${e instanceof Error ? e.message : String(e)}`]);
                 }
               }
-            } catch (e) {
-              console.error("JSON Parse Error", e);
             }
           }
         }
+
+        // 남은 buffer 처리
+        if (buffer.trim()) {
+          const lines = buffer.split('\n');
+          let finalEvent = '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              finalEvent = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+
+                if (finalEvent === 'done' || parsed.success !== undefined) {
+                  // 완료 데이터
+                  if (!parsed.success) {
+                    throw new Error(parsed.error || '크롤링 실패');
+                  }
+
+                  if (enableAudit) {
+                    const auditData = parsed.data.results || parsed.data;
+                    setResults(Array.isArray(auditData) ? auditData : []);
+
+                    if (parsed.data.excelBase64) {
+                      setExcelData(parsed.data.excelBase64);
+                    }
+                    localStorage.setItem('auditResults', JSON.stringify(Array.isArray(auditData) ? auditData : []));
+                  } else {
+                    setResults(parsed.data || []);
+                    localStorage.setItem('crawledUrls', JSON.stringify(parsed.data || []));
+                  }
+
+                  setLogs(prev => [...prev, "✅ 작업 완료!"]);
+                }
+              } catch (e) {
+                console.error('Error parsing final data:', e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        setLogs(prev => [...prev, `❌ 오류: ${error instanceof Error ? error.message : String(error)}`]);
       }
     } catch (e) {
       setLogs(prev => [...prev, `에러 발생: ${e}`]);
@@ -381,8 +418,8 @@ export default function Home() {
                     <tbody className="divide-y divide-gray-100">
                       {results.map((r, i) => (
                         <tr key={i} className="hover:bg-gray-50">
-                          <td className="px-6 py-3 font-medium text-gray-900">{r.depths[0]}</td>
-                          <td className="px-6 py-3 text-gray-900">{r.title}</td>
+                          <td className="px-6 py-3 font-medium text-gray-900">{r.depths?.[0] || '-'}</td>
+                          <td className="px-6 py-3 text-gray-900">{r.title || '-'}</td>
                           <td className="px-6 py-3 text-blue-600 truncate max-w-xs">{r.url}</td>
                           {enableAudit && (
                             <td className="px-6 py-3">

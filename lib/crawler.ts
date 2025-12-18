@@ -141,7 +141,7 @@ export class WebCrawler {
    * 기본 크롤링 (접근성 진단 없음)
    */
   public async crawl(): Promise<CrawlResult[]> {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: false, channel: 'chrome' });
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -194,7 +194,7 @@ export class WebCrawler {
   public async crawlWithAudit(): Promise<AuditResult[]> {
     // 로그 콜백 주입: Auditor 내부 로그를 Crawler 로그로 전달
     const auditor = new AccessibilityAuditor((msg) => this.log(msg));
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: false, channel: 'chrome' });
     const context = await browser.newContext();
     const page = await context.newPage();
 

@@ -1,24 +1,35 @@
 {
-  "name": "crawler-web",
-  "version": "0.1.0",
-  "private": true,
-  "main": "dist-electron/electron/main.js",
+  "name": "a11y-crawler",
+  "version": "1.0.0",
+  "description": "웹 접근성 크롤러 - KWCAG 2.2 자동 검사 도구",
+  "author": "UX-Ino",
+  "license": "MIT",
+  "bin": {
+    "a11y-crawler": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "app/",
+    "lib/",
+    ".next/",
+    "public/",
+    "package.json",
+    "next.config.ts",
+    "tsconfig.json"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "electron:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "next build && tsc -p electron/tsconfig.json",
-    "electron:package": "npm run electron:build && electron-builder"
+    "lint": "eslint"
   },
   "dependencies": {
     "axe-core": "^4.11.0",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
-    "electron-is-dev": "^3.0.1",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
+    "open": "^10.2.0",
     "playwright": "^1.57.0",
     "react": "19.2.1",
     "react-chartjs-2": "^5.3.1",
@@ -31,46 +42,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "concurrently": "^9.1.0",
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "wait-on": "^8.0.1"
-  },
-  "build": {
-    "appId": "com.inoworks.a11y-crawler",
-    "productName": "웹 접근성 크롤러",
-    "files": [
-      "out/**/*",
-      "dist-electron/**/*",
-      "node_modules/**/*",
-      "package.json"
-    ],
-    "directories": {
-      "buildResources": "assets",
-      "output": "dist"
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "category": "public.app-category.developer-tools"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ]
-    }
+    "typescript": "^5"
   }
 }
