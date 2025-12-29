@@ -8,7 +8,6 @@ interface ExcelRow {
   점검일: string;
   번호: number | string;
   지침명: string;
-  판정: string;
   오류내용: string;
   해결방안: string;
 }
@@ -55,7 +54,6 @@ export class ExcelGenerator {
       if (page.violations.length === 0) {
         // 위반이 없는 페이지도 한 줄로 표시
         rows.push({
-          'No': pageIndex + 1,
           '1뎁스': page.depths[0] || '',
           '2뎁스': page.depths[1] || '',
           '3뎁스': page.depths[2] || '',
@@ -67,7 +65,6 @@ export class ExcelGenerator {
           '점검일': metadata.date,
           '번호': '',
           '지침명': '',
-          '판정': '적합',
           '오류내용': '',
           '영향받는 요소 개수': '',
           '영향받는 요소 코드': '',
@@ -83,7 +80,6 @@ export class ExcelGenerator {
           ).join('\n\n');
 
           rows.push({
-            'No': pageIndex + 1,
             '1뎁스': page.depths[0] || '',
             '2뎁스': page.depths[1] || '',
             '3뎁스': page.depths[2] || '',
@@ -95,7 +91,6 @@ export class ExcelGenerator {
             '점검일': metadata.date,
             '번호': guideline.seq || '',  // KWCAG seq 번호 사용
             '지침명': formatKWCAGGuideline(violation.id),
-            '판정': '부적합',
             '오류내용': getKoreanDescription(violation.id, violation.description),
             '영향받는 요소 개수': violation.nodes.length,
             '영향받는 요소 코드': affectedElements,
@@ -107,7 +102,6 @@ export class ExcelGenerator {
 
     const ws = XLSX.utils.json_to_sheet(rows);
     ws['!cols'] = [
-      { wch: 6 },  // No
       { wch: 15 }, // 1뎁스
       { wch: 15 }, // 2뎁스
       { wch: 15 }, // 3뎁스
@@ -119,10 +113,9 @@ export class ExcelGenerator {
       { wch: 12 }, // 점검일
       { wch: 8 },  // 번호
       { wch: 35 }, // 지침명
-      { wch: 10 }, // 판정
       { wch: 50 }, // 오류내용
       { wch: 12 }, // 영향받는 요소 개수
-      { wch: 80 }, // 영향받는 요소 코드 (NEW)
+      { wch: 80 }, // 영향받는 요소 코드
       { wch: 70 }, // 해결방안
     ];
 

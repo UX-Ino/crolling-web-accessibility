@@ -1142,3 +1142,124 @@ export function getManualRules(): string[] {
     .filter(([_, guideline]) => !guideline.isAutomatic)
     .map(([ruleId]) => ruleId);
 }
+
+/**
+ * axe-core의 영문 failureSummary를 한국어로 번역
+ */
+export function translateFailureSummary(summary: string): string {
+  if (!summary) return '';
+
+  let translated = summary;
+
+  // 1. 공통 문구 및 단순 매핑 (Literal Translation)
+  const translationMap: Record<string, string> = {
+    'Fix any of the following:': '다음 중 하나를 수정하세요:',
+    'Fix all of the following:': '다음을 모두 수정하세요:',
+    'Element does not have inner text that is visible to screen readers': '요소에 스크린 리더가 인식할 수 있는 텍스트가 없습니다',
+    'aria-label attribute does not exist or is empty': 'aria-label 속성이 없거나 비어 있습니다',
+    'aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty': 'aria-labelledby 속성이 없거나, 존재하지 않는 요소를 참조하거나, 참조된 요소가 비어 있습니다',
+    'Element has no title attribute': '요소에 title 속성이 없습니다',
+    'Element does not have an implicit \\(wrapped\\) <label>': '요소가 암시적(감싸는 형태) <label>을 가지고 있지 않습니다',
+    'Element does not have an explicit <label>': '요소가 명시적 <label>을 가지고 있지 않습니다',
+    "Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"": '요소의 기본 의미가 role="none" 또는 role="presentation"으로 재정의되지 않았습니다',
+    'The <html> element does not have a lang attribute': '<html> 요소에 lang 속성이 없습니다',
+    'The <html> element has an invalid value for its lang attribute': '<html> 요소의 lang 속성 값이 유효하지 않습니다',
+    "The <html> element's lang and xml:lang attributes do not have the same base language": '<html> 요소의 lang 속성과 xml:lang 속성의 기본 언어가 일치하지 않습니다',
+    'Unique id attribute value is not unique': 'id 속성 값이 고유하지 않습니다',
+    'Element has insufficient color contrast of': '요소의 색상 대비가 불충분합니다:',
+    'expected': '기대치',
+    'actual': '실제',
+    'Element is not in the tab order and does not have aria-live': '요소가 탭 순서에 없으며 aria-live 속성이 정의되지 않았습니다',
+    'Interactive controls must not be nested': '상호작용 가능한 컨트롤은 중첩될 수 없습니다',
+    'The focusable element has a negative tabindex': '포커스 가능한 요소의 tabindex가 음수입니다',
+    'Duplicate id attribute value on active element': '활성 요소에 중복된 id 속성 값이 있습니다',
+    'The element has an unsupported or invalid ARIA role': '요소에 지원되지 않거나 유효하지 않은 ARIA role이 있습니다',
+    'ARIA attribute is not allowed:': '허용되지 않는 ARIA 속성입니다:',
+    'ARIA attribute value is invalid:': 'ARIA 속성 값이 유효하지 않습니다:',
+    'Element does not have a required ARIA attribute:': '필수 ARIA 속성이 없습니다:',
+    'The ARIA role is not allowed for this element': '이 요소에 허용되지 않는 ARIA role입니다',
+    'The element has no accessible name': '요소에 접근 가능한 이름이 없습니다',
+    'Document has more than one main landmark': '문서에 메인(main) 랜드마크가 두 개 이상입니다',
+    'Page must have a main landmark': '페이지에는 하나의 메인(main) 랜드마크가 있어야 합니다',
+    'All page content must be contained by landmarks': '모든 페이지 콘텐츠는 랜드마크에 포함되어야 합니다',
+    'The header must not be contained inside another landmark': 'header는 다른 랜드마크 내부에 포함되면 안 됩니다',
+    'The footer must not be contained inside another landmark': 'footer는 다른 랜드마크 내부에 포함되면 안 됩니다',
+    'The link has no styling \\(such as underline\\) to distinguish it from the surrounding text': '링크에 주변 텍스트와 구분할 수 있는 스타일(예: 밑줄)이 없습니다',
+    'Element is in tab order and does not have accessible text': '요소가 탭 순서에 포함되어 있으나 접근 가능한 텍스트가 없습니다',
+    'Element does not have text that is visible to screen readers': '요소에 스크린 리더가 인식할 수 있는 텍스트가 없습니다',
+    'ARIA content at this position is not allowed': '이 위치의 ARIA 콘텐츠는 허용되지 않습니다'
+  };
+
+  // 2. 동적 문구 번역 (Regex Translation)
+  const regexMap: [RegExp, string][] = [
+    // 리스트 구조 관련
+    [
+      /List element has direct children that are not allowed: (.*)/gi,
+      '리스트 요소에 허용되지 않는 직계 자식이 포함되어 있습니다: $1'
+    ],
+    [
+      /List elements must only contain: (.*)/gi,
+      '리스트 요소는 다음만 포함해야 합니다: $1'
+    ],
+    [
+      /(li|dt|dd) elements must be contained by (.*)/gi,
+      '$1 요소는 $2 요소 내부에 포함되어야 합니다'
+    ],
+    // 테이블 구조 관련
+    [
+      /Table element has direct children that are not allowed: (.*)/gi,
+      '테이블 요소에 허용되지 않는 직계 자식이 포함되어 있습니다: $1'
+    ],
+    [
+      /(th|td|caption|thead|tbody|tfoot) elements must be contained by (.*)/gi,
+      '$1 요소는 $2 요소 내부에 포함되어야 합니다'
+    ],
+    [
+      /Table cells must only contain: (.*)/gi,
+      '테이블 셀은 다음만 포함해야 합니다: $1'
+    ],
+    // 링크 및 폼 관련
+    [
+      /The link has insufficient color contrast of (.*) with the surrounding text\. \(Minimum contrast is (.*), link text: (.*), surrounding text: (.*)\)/gi,
+      '링크와 주변 텍스트의 색상 대비가 $1로 불충분합니다. (최소 대비 $2, 링크 텍스트: $3, 주변 텍스트: $4)'
+    ],
+    [
+      /Element has insufficient color contrast of (.*) \(foreground color: (.*), background color: (.*), font size: (.*), font weight: (.*)\)\. Expected contrast ratio of (.*)/gi,
+      '요소의 색상 대비가 $1로 불충분합니다. (글자색: $2, 배경색: $3, 글자 크기: $4, 글자 굵기: $5). 기대 대비: $6'
+    ],
+    // ARIA 관련
+    [
+      /ARIA (attribute|role) (.*) is not allowed (.*)/gi,
+      'ARIA $1 $2은(는) $3에서 허용되지 않습니다'
+    ],
+    [
+      /ARIA attribute (.*) value is invalid: (.*)/gi,
+      'ARIA 속성 $1의 값이 유효하지 않습니다: $2'
+    ],
+    [
+      /ARIA attribute (.*) is not allowed on (.*)/gi,
+      'ARIA 속성 $1은(는) $2 요소에서 사용할 수 없습니다'
+    ],
+    // 기타 구조적 문제
+    [
+      /The (.*) element does not have a (.*) attribute/gi,
+      '$1 요소에 $2 속성이 없습니다'
+    ],
+    [
+      /The (.*) element has an invalid value for its (.*) attribute/gi,
+      '$1 요소의 $2 속성 값이 유효하지 않습니다'
+    ]
+  ];
+
+  // 순차적으로 치환
+  for (const [english, korean] of Object.entries(translationMap)) {
+    const regex = new RegExp(english, 'gi');
+    translated = translated.replace(regex, korean);
+  }
+
+  for (const [regex, replacement] of regexMap) {
+    translated = translated.replace(regex, replacement);
+  }
+
+  return translated;
+}

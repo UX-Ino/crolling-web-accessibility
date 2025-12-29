@@ -13,7 +13,7 @@ import {
   Legend,
 } from 'chart.js';
 import { ChevronDown, ChevronUp, ExternalLink, AlertCircle } from 'lucide-react';
-import { formatKWCAGGuideline, getKoreanDescription, getKoreanHelp } from '@/lib/kwcag-mapping';
+import { formatKWCAGGuideline, getKoreanDescription, getKoreanHelp, translateFailureSummary } from '@/lib/kwcag-mapping';
 import Link from 'next/link';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -249,7 +249,7 @@ export default function ReportPage() {
                   <div class="element">
                     <div class="element-label">요소 #${idx + 1}</div>
                     <div class="code">${node.html.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                    ${node.failureSummary ? `<div style="color: #b91c1c; font-size: 0.75rem; margin-top: 0.5rem;">⚠️ ${node.failureSummary}</div>` : ''}
+                    ${node.failureSummary ? `<div style="color: #b91c1c; font-size: 0.75rem; margin-top: 0.5rem;">⚠️ ${translateFailureSummary(node.failureSummary)}</div>` : ''}
                   </div>
                 `).join('')}
               </div>
@@ -289,10 +289,16 @@ export default function ReportPage() {
 
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">접근성 진단 리포트</h1>
-            <p className="text-gray-600">KWCAG 2.2 / WCAG 2.1 AA 기준</p>
+          <div className="flex items-center space-x-2 pb-4 ">
+            <div className="w-50 h-20 flex items-center justify-center">
+              <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">접근성 진단 리포트</h1>
+              <p className="text-sm text-gray-500">KWCAG 2.2 / WCAG 2.1 AA 기준</p>
+            </div>
           </div>
+
           <div className="flex space-x-3">
             <Link
               href="/report/checklist"
@@ -421,7 +427,7 @@ export default function ReportPage() {
                                 </pre>
                                 {node.failureSummary && (
                                   <div className="mt-2 text-red-700 text-xs">
-                                    ⚠️ {node.failureSummary}
+                                    ⚠️ {translateFailureSummary(node.failureSummary)}
                                   </div>
                                 )}
                               </div>

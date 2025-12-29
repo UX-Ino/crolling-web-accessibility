@@ -60,6 +60,9 @@ npm unlink -g a11y-crawler
 # npm 로그인 (처음만)
 npm login
 
+# 버전 업데이트
+npm version patch
+
 # 배포
 npm publish
 

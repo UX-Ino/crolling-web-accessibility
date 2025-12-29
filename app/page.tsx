@@ -228,8 +228,8 @@ export default function Home() {
 
         {/* Header */}
         <div className="flex items-center space-x-2 pb-4 border-b">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">W</span>
+          <div className="w-50 h-20 flex items-center justify-center">
+            <img src="/images/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">웹사이트 IA 크롤러 + 접근성 진단</h1>
