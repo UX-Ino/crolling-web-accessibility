@@ -125,6 +125,24 @@ export default function ReportPage() {
     return impactMap[impact] || impact;
   };
 
+  // JSON 리포트 다운로드
+  const handleDownloadJSON = () => {
+    try {
+      const dataStr = JSON.stringify(results, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+      const exportFileDefaultName = `accessibility-report-${new Date().toISOString().split('T')[0]}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (error) {
+      console.error('JSON 다운로드 실패:', error);
+      alert('JSON 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
   // HTML 리포트 다운로드
   const handleDownloadHTML = async () => {
     try {
@@ -309,6 +327,15 @@ export default function ReportPage() {
               </svg>
               <span>진단 항목별 보기</span>
             </Link>
+            <button
+              onClick={handleDownloadJSON}
+              className="flex items-center space-x-2 bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>JSON 다운로드</span>
+            </button>
             <button
               onClick={handleDownloadHTML}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"

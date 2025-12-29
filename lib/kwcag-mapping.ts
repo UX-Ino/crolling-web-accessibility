@@ -1092,12 +1092,12 @@ export function getKoreanHelp(ruleId: string, defaultHelp: string): string {
 export function getImpactInfo(impact: ImpactLevel) {
   const impactInfo = {
     critical: {
-      name: '심각',
+      name: '치명적',
       description: '웹 접근성 인증 마크 획득을 위해 반드시 수정해야 하는 항목입니다.',
       action: '즉시 수정 필요'
     },
     serious: {
-      name: '중요',
+      name: '심각',
       description: '웹 접근성 인증 마크 획득을 위해 수정해야 하는 항목입니다.',
       action: '우선 수정 권장'
     },
